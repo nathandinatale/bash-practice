@@ -2,32 +2,35 @@
 
 total_args=$#
 
+function extract_property(){
+  local property=${1}
+  local res=${2}
+  local result=$(echo $res | jq ".[] | .\"$property\"" | tr -d "\"")
+  echo "${property^}: ${result}"
+}
+
+attributes=("name" "population" "capital")
+
 for var in "$@"
 do
+  response=$(curl -s https://restcountries.com/v2/name/${var})
 
-response=$(curl -s https://restcountries.com/v2/name/${var})
+  for attr in ${attributes[@]}; do 
+    country_attribute=$(extract_property "${attr}" "${response}")
+    echo ${country_attribute}
+  done
 
-name=$(echo ${response} | jq '.[] | .name' | tr -d "\"")
-echo "Name: ${name}"
+  languages=$(echo ${response} | jq '.[] | .languages | .[].name' | tr -d "\"")
+  lang_string=""
+  for language in  ${languages}; do
+    lang_string="${lang_string}${language}, "
+  done
 
-capital=$(echo ${response} | jq '.[] | .capital' | tr -d "\"")
-echo "Capital: ${capital}"
+  lang_string=${lang_string%, }
+  echo "Languages: ${lang_string}"
 
-population=$(echo ${response} | jq '.[] | .population' | tr -d "\"")
-echo "Population: ${population}"
-
-languages=$(echo ${response} | jq '.[] | .languages | .[].name' | tr -d "\"")
-
-lang_string=""
-for language in  ${languages}; do
-lang_string="${lang_string}${language}, " 
+  printf "\n"
 done
 
-lang_string=${lang_string%, }
-echo "Languages: ${lang_string}"
-
-printf "\n"
-
-done
 
 
